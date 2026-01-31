@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="blue">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI-CALC PRO GLOBAL</title>
+    <style>
+        /* ALL 8 THEMES */
+        :root { --bg: #f2f2f7; --card: #ffffff; --text: #000; --accent: #007aff; --gray: #e5e5ea; --panel: #fff; }
+        [data-theme="dark"] { --bg: #000; --card: #1c1c1e; --text: #fff; --accent: #ff9f0a; --gray: #2c2c2e; --panel: #1c1c1e; }
+        [data-theme="blue"] { --bg: #001f3f; --card: #003366; --text: #fff; --accent: #7fdbff; --gray: #004080; --panel: #001f3f; }
+        [data-theme="neon"] { --bg: #000; --card: #000; --text: #fff; --accent: #39ff14; --gray: #1a1a1a; --panel: #000; }
+        [data-theme="bold"] { --bg: #4a0404; --card: #800000; --text: #fff; --accent: #ffd700; --gray: #5e0000; --panel: #4a0404; }
+        [data-theme="earth"] { --bg: #354a21; --card: #4f6228; --text: #f5f5dc; --accent: #d2b48c; --gray: #3d4f24; --panel: #354a21; }
+        [data-theme="minimal"] { --bg: #fff; --card: #fff; --text: #000; --accent: #000; --gray: #f2f2f2; --panel: #fff; }
+        [data-theme="pastel"] { --bg: #fdf6e3; --card: #fff; --text: #657b83; --accent: #d33682; --gray: #eee8d5; --panel: #fdf6e3; }
+
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--panel); z-index: 100; display: none; padding: 40px 20px; box-sizing: border-box; overflow-y: auto; }
+        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; }
+        .top-nav { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray); }
+        .mode-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 15px; border-bottom: 1px solid var(--gray); scrollbar-width: none; }
+        .mode-btn { background: var(--gray); color: var(--text); border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 13px; }
+        .mode-btn.active { background: var(--accent); color: white; font-weight: bold; }
+        .display { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 20px; }
+        input { background: none; border: none; color: var(--text); font-size: 50px; text-align: right; width: 100%; outline: none; font-weight: 200; }
+        .label { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; text-align: right; }
+        .results { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; background: var(--card); border-radius: 30px 30px 0 0; }
+        .res-card { background: var(--gray); padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; }
+        .history-peek { padding: 10px; text-align: center; background: var(--gray); cursor: pointer; font-size: 12px; font-weight: bold; }
+        .hist-item { padding: 10px; border-bottom: 1px solid var(--gray); font-family: monospace; font-size: 11px; }
+        select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; background: var(--gray); color: var(--text); border: 1px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+<div id="settingsPanel" class="overlay">
+    <div class="close-btn" onclick="toggleSettings()">✕</div>
+    <h2 id="set-h">Settings</h2>
+    <p id="set-t">Themes:</p>
+    <select id="theme" onchange="document.documentElement.setAttribute('data-theme', this.value)">
+        <option value="blue">Blue Trust</option><option value="dark">Pro Dark</option>
+        <option value="light">Classic Light</option><option value="neon">Neon Tech</option>
+        <option value="bold">Bold Energy</option><option value="earth">Earth Tones</option>
+        <option value="minimal">Minimalist</option><option value="pastel">Soft Pastel</option>
+    </select>
+    <p id="set-l">Languages:</p>
+    <select id="lang" onchange="updateUI()">
+        <option value="en">English</option><option value="bn">বাংলা</option>
+        <option value="ar">العربية</option><option value="es">Español</option>
+        <option value="fr">Français</option><option value="pt">Português</option>
+        <option value="ca">Català</option><option value="br">Português (BR)</option>
+    </select>
+</div>
+
+<div id="historyPanel" class="overlay">
+    <div class="close-btn" onclick="toggleHistory()">✕</div>
+    <h2 id="hist-h">History</h2>
+    <div id="historyList"></div>
+    <button onclick="clearHist()" id="hist-c" style="width:100%; padding:15px; margin-top:10px; background:#ff3b30; color:white; border:none; border-radius:10px;">Clear</button>
+</div>
+
+<div class="top-nav">
+    <div onclick="toggleSettings()" style="cursor:pointer" id="nav-s">⚙️ Settings</div>
+    <div id="modeDisplay" style="font-weight: bold; color: var(--accent);">Office</div>
+</div>
+
+<div class="mode-scroll" id="modeNav"></div>
+
+<div class="display">
+    <div class="label" id="labelA">Input A</div>
+    <input type="number" id="A" value="10" oninput="calculate()">
+    <div class="label" id="labelB">Input B</div>
+    <input type="number" id="B" value="5" oninput="calculate()">
+</div>
+
+<div class="history-peek" onclick="toggleHistory()" id="hist-p">📜 View History</div>
+<div class="results" id="output"></div>
+
+<script>
+    let modeId = 0;
+    let history = [];
+    
+    // THE 8-LANGUAGE DICTIONARY
+    const dict = {
+        en: { modes: ["Office", "Sci", "Graph", "Finance", "Print", "Logic", "Health", "Compare"], sets: "Settings", themes: "Themes", langs: "Languages", hist: "History", clear: "Clear History", peek: "View History" },
+        bn: { modes: ["অফিস", "বৈজ্ঞানিক", "গ্রাফ", "আর্থিক", "প্রিন্ট", "লজিক", "স্বাস্থ্য", "তুলনা"], sets: "সেটিংস", themes: "থিম", langs: "ভাষা", hist: "ইতিহাস", clear: "সব মুছুন", peek: "ইতিহাস দেখুন" },
+        ar: { modes: ["مكتب", "علمي", "رسم", "مالي", "طباعة", "منطق", "صحة", "مقارنة"], sets: "الإعدادات", themes: "السمات", langs: "اللغات", hist: "السجل", clear: "مسح الكل", peek: "عرض السجل" },
+        es: { modes: ["Oficina", "Sci", "Gráfica", "Finanzas", "Impresión", "Lógica", "Salud", "Comparar"], sets: "Ajustes", themes: "Temas", langs: "Idiomas", hist: "Historial", clear: "Limpiar", peek: "Ver Historial" },
+        fr: { modes: ["Bureau", "Sci", "Graphique", "Finance", "Impression", "Logique", "Santé", "Comparer"], sets: "Réglages", themes: "Thèmes", langs: "Langues", hist: "Historique", clear: "Effacer", peek: "Voir Historique" },
+        pt: { modes: ["Escritório", "Sci", "Gráfico", "Finanças", "Imprimir", "Lógica", "Saúde", "Comparar"], sets: "Ajustes", themes: "Temas", langs: "Idiomas", hist: "Histórico", clear: "Limpar", peek: "Ver Histórico" },
+        ca: { modes: ["Oficina", "Sci", "Gràfic", "Finances", "Imprimir", "Lògica", "Salut", "Comparar"], sets: "Ajustes", themes: "Temes", langs: "Idiomes", hist: "Historial", clear: "Netejar", peek: "Veure Historial" },
+        br: { modes: ["Escritório", "Sci", "Gráfico", "Finanças", "Imprimir", "Lógica", "Saúde", "Comparar"], sets: "Config", themes: "Temas", langs: "Idiomas", hist: "Histórico", clear: "Limpar", peek: "Ver Histórico" }
+    };
+
+    function toggleSettings() { const s = document.getElementById('settingsPanel'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; }
+    function toggleHistory() { const h = document.getElementById('historyPanel'); h.style.display = h.style.display === 'block' ? 'none' : 'block'; renderHistory(); }
+    function clearHist() { history = []; renderHistory(); }
+
+    function updateUI() {
+        const lang = document.getElementById('lang').value;
+        const d = dict[lang] || dict.en;
+        
+        // Update Static Text
+        document.getElementById('nav-s').innerText = "⚙️ " + d.sets;
+        document.getElementById('set-h').innerText = d.sets;
+        document.getElementById('set-t').innerText = d.themes;
+        document.getElementById('set-l').innerText = d.langs;
+        document.getElementById('hist-h').innerText = d.hist;
+        document.getElementById('hist-c').innerText = d.clear;
+        document.getElementById('hist-p').innerText = "📜 " + d.peek;
+        document.getElementById('modeDisplay').innerText = d.modes[modeId];
+        
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        
+        const nav = document.getElementById('modeNav');
+        nav.innerHTML = d.modes.map((m, i) => 
+            `<button class="mode-btn ${i===modeId?'active':''}" onclick="setMode(${i})">${m}</button>`
+        ).join('');
+        calculate();
+    }
+
+    function setMode(i) { modeId = i; updateUI(); }
+
+    function calculate() {
+        const a = parseFloat(document.getElementById('A').value) || 0;
+        const b = parseFloat(document.getElementById('B').value) || 0;
+        const out = document.getElementById('output');
+        let res = [];
+
+        if (modeId === 7) res = [["Min", Math.min(a,b)], ["Max", Math.max(a,b)], ["Match", a==b?"✓":"✗"]];
+        else if (modeId === 0) res = [["+", a+b], ["-", a-b], ["×", a*b], ["÷", b?(a/b).toFixed(1):"∞"]];
+        else if (modeId === 6) { let bmi = (a/((b/100)**2)).toFixed(1); res = [["BMI", bmi], ["Stat", bmi<25?"OK":"!"]]; }
+        else res = [["Res", a*b], ["Log", "Done"]];
+
+        out.innerHTML = res.map(r => `<div class="res-card" onclick="navigator.clipboard.writeText('${r[1]}');"><div>${r[0]}</div><b>${r[1]}</b></div>`).join('');
+        history.push(`${new Date().toLocaleTimeString()} | A:${a} B:${b} → ${res[0][1]}`);
+    }
+
+    function renderHistory() {
+        document.getElementById('historyList').innerHTML = history.slice(-20).reverse().map(h => `<div class="hist-item">${h}</div>`).join('') || "---";
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
